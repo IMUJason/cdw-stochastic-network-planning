@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use this data or code, please cite the associated article and this repository."
+title: "CDW stochastic network planning: data and optimization code"
+type: software
+authors:
+  - family-names: Cao
+    given-names: Jin Xin
+  - family-names: Zhang
+    given-names: Nai Zhuo
+  - family-names: Li
+    given-names: Run Ji
+version: 2.2.0
+date-released: 2026-07-13
+repository-code: "https://github.com/IMUJason/cdw-stochastic-network-planning"
+keywords:
+  - construction and demolition waste
+  - facility location
+  - stochastic programming
+  - capacity planning
+  - reverse logistics

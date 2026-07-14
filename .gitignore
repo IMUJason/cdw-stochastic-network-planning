@@ -1,0 +1,10 @@
+.DS_Store
+.venv/
+__pycache__/
+*.py[cod]
+
+data/derived/*
+!data/derived/.gitkeep
+results/*
+!results/.gitkeep
+artifacts/
