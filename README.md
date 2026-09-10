@@ -50,6 +50,12 @@ installed executable when it is not in a default location:
 export CDW_CPLEX_BIN=/absolute/path/to/cplex
 ```
 
+On Windows, CPLEX 22.1.1 cannot read or write files under paths that contain
+non-ASCII characters. The workflows detect this case and stage solver inputs in
+an ASCII temporary directory, copying solutions back to their canonical
+locations; set `CDW_CPLEX_ASCII_DIR` to choose the staging directory (defaults
+to the system temporary directory).
+
 Create a Python environment:
 
 ```bash
@@ -88,6 +94,30 @@ longest workflow. A small execution check can be run with:
 PYTHONPATH=code python code/run_scenario_stability.py \
   --counts 8 --replicates 2 --holdout-size 16
 ```
+
+## Run the policy-dose and robustness extensions
+
+These experiments extend the policy comparison and the sensitivity evidence:
+the shortage-margin leverage comparison and the extended carbon-price sweep
+toward the iso-leverage price, the base-shortage-cost fine grid, the
+out-of-sample policy ranking on the common holdout, the scenario-weight and
+correlation sensitivity, the two-dimensional demand-coefficient grid, and the
+MILP size/certification summary. Run them after the core workflow:
+
+```bash
+PYTHONPATH=code python code/run_policy_extensions.py --only dose
+PYTHONPATH=code python code/run_policy_extensions.py --only shortage
+PYTHONPATH=code python code/run_policy_extensions.py --only ranking
+PYTHONPATH=code python code/run_policy_extensions.py --only specification
+PYTHONPATH=code python code/run_policy_extensions.py --only coefficients
+PYTHONPATH=code python code/run_policy_extensions.py --only statistics
+# or, all families in sequence:
+PYTHONPATH=code python code/run_policy_extensions.py --only all
+```
+
+Outputs are written under `results/cdw_rln_v2.2.0-20260713/` with the prefix
+`policy_extension_`. The `dose` and `ranking` families require the primary
+results and facility solutions produced by the core workflow.
 
 ## Integrity and reproducibility
 

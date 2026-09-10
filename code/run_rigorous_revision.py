@@ -7,6 +7,7 @@ import hashlib
 import json
 import shutil
 import subprocess
+import tempfile
 import time
 import xml.etree.ElementTree as ET
 from collections import defaultdict
@@ -205,6 +206,14 @@ def _write_facility_mip_start(fac: pd.DataFrame, solution_csv: Path, path: Path)
     ET.ElementTree(root).write(path, encoding="UTF-8", xml_declaration=True)
 
 
+def _path_is_ascii(path: Path) -> bool:
+    try:
+        str(path.resolve()).encode("ascii")
+    except UnicodeEncodeError:
+        return False
+    return True
+
+
 def _run_cplex(
     lp_path: Path,
     solution_path: Path,
@@ -212,24 +221,58 @@ def _run_cplex(
     time_limit: int = 300,
     mip_start_path: Path | None = None,
 ) -> Dict[str, object]:
+    # CPLEX 22.1.1 on Windows cannot read or write files whose paths contain
+    # non-ASCII characters even when the paths are valid. When the working
+    # directory contains such characters, stage the LP (and any MIP start) in
+    # an ASCII temporary directory, run the solver there, and copy the
+    # solution back to its canonical path.
+    staged = not _path_is_ascii(lp_path.parent)
+    if staged:
+        stage_dir = Path(tempfile.gettempdir()) / "cdw_cplex_stage"
+        stage_dir.mkdir(parents=True, exist_ok=True)
+        solver_lp = stage_dir / lp_path.name
+        shutil.copy(lp_path, solver_lp)
+        solver_start = None
+        if mip_start_path is not None:
+            solver_start = stage_dir / mip_start_path.name
+            shutil.copy(mip_start_path, solver_start)
+        solver_solution = stage_dir / solution_path.name
+    else:
+        stage_dir = lp_path.parent
+        solver_lp = lp_path
+        solver_start = mip_start_path
+        solver_solution = solution_path
+
     cmd = [
         str(CPLEX_BIN),
         "-c",
-        f'read "{lp_path}"',
+        f'read "{solver_lp}"',
     ]
-    if mip_start_path is not None:
-        cmd.append(f'read "{mip_start_path}"')
+    if solver_start is not None:
+        cmd.append(f'read "{solver_start}"')
     cmd += [
         f"set timelimit {time_limit}",
         "set threads 16",
         "set mip tolerances mipgap 1e-9",
         "set emphasis numerical y",
         "optimize",
-        f'write "{solution_path}"',
+        f'write "{solver_solution}"',
         "quit",
     ]
     t0 = time.time()
-    proc = subprocess.run(cmd, capture_output=True, text=True, cwd=lp_path.parent, timeout=time_limit + 30)
+    # errors="replace" keeps the run alive when the console codepage of the
+    # solver process cannot be decoded (e.g., non-ASCII working-directory
+    # characters on Windows); parsing below relies on ASCII status lines only.
+    proc = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        errors="replace",
+        cwd=stage_dir,
+        timeout=time_limit + 30,
+    )
+    if staged and solver_solution.exists():
+        shutil.copy(solver_solution, solution_path)
     text = (proc.stdout or "") + "\n" + (proc.stderr or "")
     log_path.write_text(text, encoding="utf-8")
     parsed = _parse_cplex_log(text)
@@ -662,7 +705,7 @@ def write_manifest(bundle: Dict[str, object]) -> None:
         "shortage_emission_tco2_per_t": SHORTAGE_EMISSION_TCO2_PER_T,
         "cplex_numerical_emphasis": True,
         "nested_coverage_mip_start": "Primary baseline facility solution",
-        "solver": str(CPLEX_BIN),
+        "solver": "IBM ILOG CPLEX 22.1.1 command-line optimizer",
     }
     metadata_path = OUT_DIR / "revision_metadata.json"
     metadata_path.write_text(json.dumps(metadata, indent=2), encoding="utf-8")

@@ -13,6 +13,7 @@ import os
 import re
 import shutil
 import subprocess
+import tempfile
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -340,7 +341,10 @@ def _run_cplex(lp_path: Path, log_path: Path, cfg: MonolithicConfig) -> Dict[str
         "quit",
     ]
     tic = time.time()
-    proc = subprocess.run(cmd, capture_output=True, text=True, cwd=str(lp_path.parent))
+    # errors="replace" keeps the run alive when the console codepage of the
+    # solver process cannot be decoded (e.g., non-ASCII working-directory
+    # characters on Windows); parsing below relies on ASCII status lines only.
+    proc = subprocess.run(cmd, capture_output=True, text=True, errors="replace", cwd=str(lp_path.parent))
     runtime = time.time() - tic
     log_text = (proc.stdout or "") + "\n" + (proc.stderr or "")
     log_path.write_text(log_text, encoding="utf-8")
@@ -389,7 +393,9 @@ def run_benchmark() -> pd.DataFrame:
         # non-ASCII characters even when the path is valid UTF-8. Copy the LP
         # to an ASCII staging directory before invoking CPLEX, then write the
         # log back to the canonical path.
-        ascii_lp_dir = Path(os.environ.get("CDW_CPLEX_ASCII_DIR", r"C:/tmp/cdw_lp"))
+        ascii_lp_dir = Path(
+            os.environ.get("CDW_CPLEX_ASCII_DIR", str(Path(tempfile.gettempdir()) / "cdw_lp"))
+        )
         ascii_lp_dir.mkdir(parents=True, exist_ok=True)
         ascii_lp = ascii_lp_dir / lp_path.name
         shutil.copy(lp_path, ascii_lp)

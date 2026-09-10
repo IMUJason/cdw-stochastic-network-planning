@@ -24,21 +24,11 @@ if ARCHIVE_MODE:
         "transport_matrix": ROOT / "data/source/transport_cost_matrix.csv",
     }
 else:
-    ROOT = SCRIPT_DIR.parents[1]
-    STUDY_DIR = SCRIPT_DIR.parent
-    DATA_DIR = ROOT / "data/processed" / VERSION
-    OUT_DIR = ROOT / "output/optimization" / VERSION
-    REV_DIR = STUDY_DIR / "submission/revision_20260713_v2.2"
-    regional_parameter_candidates = sorted((ROOT / "data/processed").glob("*_parameters_for_optimization.csv"))
-    if len(regional_parameter_candidates) != 1:
-        raise RuntimeError("Expected exactly one regional operating-parameter source file")
-    SOURCE_PATHS = {
-        "city_master": ROOT / "data/processed/city_list.csv",
-        "demand_projections": ROOT / "data/processed/cdw_predictions_2023_2035.csv",
-        "regional_operating_parameters": regional_parameter_candidates[0],
-        "candidate_sites": ROOT / "data/processed/facility_list.csv",
-        "transport_matrix": ROOT / "data/data_package/E/transport_cost_matrix.csv",
-    }
+    raise RuntimeError(
+        "This module resolves paths for the public archive layout, in which the "
+        "scripts live in code/ at the repository root (see README.md). Run the "
+        "workflows from that layout."
+    )
 
 PUBLIC_SOURCE_PATHS = {
     "city_master": PurePosixPath("data/source/city_master.csv"),
@@ -51,6 +41,7 @@ PUBLIC_SOURCE_PATHS = {
 SOURCE_CODE_NAMES = (
     "release_layout.py",
     "run_rigorous_revision.py",
+    "run_policy_extensions.py",
     "scenario_generator.py",
     "stochastic_analysis.py",
     "run_stochastic_value_analysis.py",
