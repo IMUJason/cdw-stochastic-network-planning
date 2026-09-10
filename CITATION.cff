@@ -5,10 +5,6 @@ type: software
 authors:
   - family-names: Cao
     given-names: Jin Xin
-  - family-names: Zhang
-    given-names: Nai Zhuo
-  - family-names: Li
-    given-names: Run Ji
 version: 2.2.0
 date-released: 2026-07-13
 repository-code: "https://github.com/IMUJason/cdw-stochastic-network-planning"
