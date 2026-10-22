@@ -119,6 +119,33 @@ Outputs are written under `results/cdw_rln_v2.2.0-20260713/` with the prefix
 `policy_extension_`. The `dose` and `ranking` families require the primary
 results and facility solutions produced by the core workflow.
 
+## Run the second-revision verification experiments
+
+These experiments verify the two structural propositions added in the second
+revision. `homogeneous` re-solves the charge case and the carbon case at the
+exact iso-leverage price under a uniform emission field (every arc's
+transport-plus-processing intensity set to the design average) and confirms
+that the two optimal solutions coincide, with the objective difference equal
+to the decision-independent constant `tau* * e_bar * E[demand]`.
+`identity` confirms that the out-of-network charge at base `b` is the same
+mathematical program as the uncharged case at base `b + 260` (baseline
+re-solves at 600 and 720 CNY/t against the charge cases at bases 340 and
+460). `intensities` reports the design-average treated-emission intensity
+and the switched-ton finite-difference estimates without new solves:
+
+```bash
+PYTHONPATH=code python code/run_revision2_verifications.py --only homogeneous
+PYTHONPATH=code python code/run_revision2_verifications.py --only identity
+PYTHONPATH=code python code/run_revision2_verifications.py --only intensities
+# or, all families in sequence:
+PYTHONPATH=code python code/run_revision2_verifications.py --only all
+```
+
+Outputs are written under `results/cdw_rln_v2.2.0-20260713/` with the prefix
+`revision2_`. These families require the primary results produced by the
+core workflow, and `intensities` additionally reads the `dose` family of
+`run_policy_extensions.py` for the tau = 890 estimate.
+
 ## Integrity and reproducibility
 
 `checksums.sha256` records the SHA-256 digest of every released input and code
